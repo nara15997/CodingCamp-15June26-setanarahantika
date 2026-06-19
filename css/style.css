@@ -27,9 +27,25 @@
   --color-accent:      #3b82f6;
   --color-accent-dark: #1d4ed8;
   --color-finished:    #fef08a;  /* timer--finished highlight */
+  --color-nav-bg:      #ffffff;
+  --color-nav-border:  #e5e7eb;
   --radius:            8px;
   --gap:               16px;
   --shadow:            0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+/* Dark-mode token overrides — activated by adding the `dark` class to <html> */
+html.dark {
+  --color-bg:         #0f172a;
+  --color-surface:    #1e293b;
+  --color-border:     #334155;
+  --color-text:       #f1f5f9;
+  --color-text-muted: #94a3b8;
+  --color-accent:     #60a5fa;
+  --color-accent-dark:#3b82f6;
+  --color-finished:   #713f12;
+  --color-nav-bg:     #1e293b;
+  --color-nav-border: #334155;
 }
 
 html {
@@ -45,6 +61,8 @@ body {
   background-color: var(--color-bg);
   min-height: 100vh;
   padding: var(--gap);
+  /* Smooth colour transitions when switching themes */
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 /* ==========================================================
@@ -56,12 +74,54 @@ body {
 body {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  grid-template-rows: auto auto;
+  grid-template-rows: auto auto auto;
   grid-template-areas:
-    "greeting  timer"
-    "tasks     links";
+    "nav      nav"
+    "greeting timer"
+    "tasks    links";
   gap: var(--gap);
   align-items: start;
+}
+
+/* ==========================================================
+   3a. Site Navbar
+   ========================================================== */
+
+#site-nav {
+  grid-area: nav;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--color-nav-bg);
+  border: 1px solid var(--color-nav-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 10px 20px;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.site-nav__title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: -0.01em;
+}
+
+/* Theme toggle button — visually distinct from action buttons */
+#theme-toggle {
+  padding: 6px 14px;
+  font-size: 0.9375rem;
+  background-color: transparent;
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: 20px;       /* pill shape to distinguish it */
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+}
+
+#theme-toggle:hover {
+  background-color: var(--color-border);
 }
 
 /* Widget base card style — provides the visible distinct region
@@ -76,6 +136,7 @@ body {
   box-shadow: var(--shadow);
   padding: 20px 24px;
   min-width: 0; /* prevents grid blowout */
+  transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
 #greeting-widget    { grid-area: greeting; }
@@ -102,6 +163,75 @@ body {
 #greeting-widget #greeting-message {
   font-size: 1.1rem;
   margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* Pencil edit-trigger button — tiny, transparent, sits inline */
+.greeting-edit-btn {
+  padding: 2px 6px;
+  font-size: 0.85rem;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  line-height: 1;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.greeting-edit-btn:hover {
+  border-color: var(--color-border);
+  color: var(--color-text);
+  background: transparent;
+}
+
+/* Inline name editor form */
+.greeting-name-form {
+  margin-top: 10px;
+}
+
+.greeting-name-label {
+  display: block;
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  margin-bottom: 4px;
+}
+
+.greeting-name-controls {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.greeting-name-controls input[type="text"] {
+  flex: 1 1 140px;
+  min-width: 0;
+  font-size: 0.9375rem;
+}
+
+/* Secondary (cancel) button style */
+.btn-secondary {
+  background-color: transparent;
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: var(--color-border);
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+
+/* Inline error below the name input */
+.greeting-name-error {
+  display: block;
+  font-size: 0.875rem;
+  color: #dc2626;
+  margin-top: 4px;
+  width: 100%;
 }
 
 /* ---- Focus Timer ---- */
@@ -113,6 +243,52 @@ body {
   text-align: center;
   margin-bottom: 12px;
   line-height: 1.1;
+}
+
+/* Mode tab row */
+.timer-mode-tabs {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+/* Individual mode tab button — pill-shaped, subdued by default */
+.timer-mode-btn {
+  padding: 4px 14px;
+  font-size: 0.875rem;  /* 14px */
+  background-color: transparent;
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.timer-mode-btn:hover:not(:disabled) {
+  background-color: var(--color-border);
+  color: var(--color-text);
+}
+
+/* Active / selected mode tab */
+.timer-mode-btn--active {
+  background-color: var(--color-accent);
+  color: #fff;
+  border-color: var(--color-accent);
+}
+
+.timer-mode-btn--active:hover:not(:disabled) {
+  background-color: var(--color-accent-dark);
+  border-color: var(--color-accent-dark);
+}
+
+/* Session counter label */
+#timer-session-count {
+  text-align: center;
+  font-size: 0.875rem;  /* 14px */
+  color: var(--color-text-muted);
+  margin-bottom: 4px;
 }
 
 .timer-controls {
@@ -141,6 +317,43 @@ body {
 .task-add-form input {
   flex: 1 1 160px;
   min-width: 0;
+}
+
+/* Toolbar row — sits between the add form and the task list */
+.task-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+/* Sort button — pill shaped, subdued by default */
+#task-sort {
+  padding: 4px 12px;
+  font-size: 0.875rem; /* 14px */
+  background-color: transparent;
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+}
+
+#task-sort:hover {
+  background-color: var(--color-border);
+  color: var(--color-text);
+}
+
+/* Active state — accent colour when a sort direction is applied */
+#task-sort.task-sort--active {
+  background-color: var(--color-accent);
+  color: #fff;
+  border-color: var(--color-accent);
+}
+
+#task-sort.task-sort--active:hover {
+  background-color: var(--color-accent-dark);
+  border-color: var(--color-accent-dark);
 }
 
 #task-list {
@@ -274,7 +487,9 @@ input[type="url"] {
   border-radius: 4px;
   outline: none;
   width: 100%;
-  transition: border-color 0.15s;
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  transition: border-color 0.15s, background-color 0.2s ease, color 0.2s ease;
 }
 
 input[type="text"]:focus,
@@ -335,6 +550,18 @@ button:disabled {
   box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.35);
 }
 
+/* Break mode running/paused — green tint to distinguish from focus */
+.timer--break {
+  border-color: #10b981;
+  background-color: #ecfdf5;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
+}
+
+html.dark .timer--break {
+  background-color: #052e16;
+  border-color: #10b981;
+}
+
 /* ==========================================================
    7. Responsive Rules
    Requirements: 10.4 — 320px to 2560px, no horizontal scroll,
@@ -350,6 +577,7 @@ button:disabled {
   body {
     grid-template-columns: 1fr;
     grid-template-areas:
+      "nav"
       "greeting"
       "timer"
       "tasks"

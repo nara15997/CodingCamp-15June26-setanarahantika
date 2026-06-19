@@ -8,19 +8,47 @@
     <script src="js/app.js" defer></script>
   </head>
   <body>
+    <!-- Site Navbar — contains the app title and dark/light mode toggle -->
+    <header id="site-nav" aria-label="Site navigation">
+      <span class="site-nav__title">📋 Life Dashboard</span>
+      <button id="theme-toggle" type="button" aria-label="Switch to dark mode">🌙 Dark</button>
+    </header>
+
     <!-- Greeting Widget -->
     <section id="greeting-widget" aria-label="Greeting">
       <p id="greeting-time"></p>
       <p id="greeting-date"></p>
-      <p id="greeting-message"></p>
+      <p id="greeting-message">
+        <span id="greeting-message-text"></span>
+        <button id="greeting-edit-btn" type="button" class="greeting-edit-btn" aria-label="Edit your name" title="Edit name">✏️</button>
+      </p>
+      <!-- Inline name editor — hidden until the user clicks the pencil -->
+      <div id="greeting-name-form" class="greeting-name-form" hidden>
+        <label for="greeting-name-input" class="greeting-name-label">Your name</label>
+        <div class="greeting-name-controls">
+          <input id="greeting-name-input" type="text" maxlength="50" autocomplete="off" placeholder="Enter your name…" />
+          <button id="greeting-name-save" type="button">Save</button>
+          <button id="greeting-name-cancel" type="button" class="btn-secondary">Cancel</button>
+        </div>
+      </div>
     </section>
 
     <!-- Focus Timer -->
     <section id="focus-timer" aria-label="Focus Timer">
+      <!-- Mode selector -->
+      <div class="timer-mode-tabs" role="group" aria-label="Timer mode">
+        <button id="timer-mode-focus"  type="button" class="timer-mode-btn timer-mode-btn--active" aria-pressed="true">Focus</button>
+        <button id="timer-mode-short"  type="button" class="timer-mode-btn" aria-pressed="false">Short Break</button>
+        <button id="timer-mode-long"   type="button" class="timer-mode-btn" aria-pressed="false">Long Break</button>
+      </div>
+      <!-- Session progress -->
+      <p id="timer-session-count" aria-live="polite">Session 1 / 4</p>
+      <!-- Countdown display -->
       <p id="timer-display">25:00</p>
+      <!-- Controls -->
       <div class="timer-controls">
         <button id="timer-start" type="button">Start</button>
-        <button id="timer-stop" type="button">Stop</button>
+        <button id="timer-stop"  type="button">Stop</button>
         <button id="timer-reset" type="button">Reset</button>
       </div>
     </section>
@@ -37,6 +65,12 @@
           autocomplete="off"
         />
         <button id="task-submit" type="button">Add Task</button>
+      </div>
+      <!-- Task list toolbar: sort control -->
+      <div class="task-toolbar">
+        <button id="task-sort" type="button" aria-label="Sort tasks A → Z" title="Sort A → Z">
+          A–Z ↕
+        </button>
       </div>
       <ul id="task-list" aria-label="Task list"></ul>
     </section>

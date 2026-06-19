@@ -78,14 +78,98 @@
   };
 
   /* =========================================================
-     SECTION 2: GreetingWidget
+     SECTION 2: ThemeToggle
+     Manages the dark / light mode preference.
+     - Reads the saved preference from localStorage on init
+     - Falls back to the OS-level prefers-color-scheme media query
+     - Toggles the `dark` class on <html> to activate dark-mode CSS vars
+     - Saves the chosen preference under the key `dashboard_theme`
+     - Updates the toggle button label to reflect the current state
+     ========================================================= */
+
+  const ThemeToggle = (function () {
+    const STORAGE_KEY = 'dashboard_theme';
+    const BTN_ID      = 'theme-toggle';
+
+    /**
+     * Applies `theme` ('dark' or 'light') to the document and updates
+     * the toggle button's label and aria-label.
+     * @param {'dark'|'light'} theme
+     */
+    function applyTheme(theme) {
+      const html = document.documentElement;
+      const btn  = document.getElementById(BTN_ID);
+
+      if (theme === 'dark') {
+        html.classList.add('dark');
+        if (btn) {
+          btn.textContent = '☀️ Light';
+          btn.setAttribute('aria-label', 'Switch to light mode');
+        }
+      } else {
+        html.classList.remove('dark');
+        if (btn) {
+          btn.textContent = '🌙 Dark';
+          btn.setAttribute('aria-label', 'Switch to dark mode');
+        }
+      }
+    }
+
+    /**
+     * Reads the stored preference, falls back to the OS preference,
+     * applies the theme, and wires up the toggle button click handler.
+     */
+    function init() {
+      // Determine initial theme: stored value > OS preference > light
+      const stored = StorageService.get(STORAGE_KEY);
+      let theme;
+
+      if (stored === 'dark' || stored === 'light') {
+        theme = stored;
+      } else {
+        // Respect the OS-level colour scheme preference when no stored value exists
+        const prefersDark = window.matchMedia &&
+                            window.matchMedia('(prefers-color-scheme: dark)').matches;
+        theme = prefersDark ? 'dark' : 'light';
+      }
+
+      applyTheme(theme);
+
+      // Wire up the toggle button
+      const btn = document.getElementById(BTN_ID);
+      if (btn) {
+        btn.addEventListener('click', function () {
+          const current = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+          const next    = current === 'dark' ? 'light' : 'dark';
+          applyTheme(next);
+          StorageService.set(STORAGE_KEY, next);
+        });
+      }
+    }
+
+    return { init };
+  }());
+
+  /* =========================================================
+     SECTION 3: GreetingWidget
      Displays live HH:MM time, full date string, and a
      time-of-day greeting that optionally includes the user's
      name read from localStorage.
      Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6
      ========================================================= */
 
+  /* =========================================================
+     SECTION 3: GreetingWidget
+     Displays live HH:MM time, full date string, and a
+     time-of-day greeting that optionally includes the user's
+     name read from localStorage. Includes an inline name editor
+     so the user can set / update their name without leaving the page.
+     Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6
+     ========================================================= */
+
   const GreetingWidget = (function () {
+
+    var STORAGE_KEY = 'dashboard_user_name';
 
     /**
      * Returns the appropriate greeting prefix for the given hour.
@@ -100,7 +184,7 @@
 
     /**
      * Reads the current date/time, formats all display strings,
-     * reads the stored user name, then writes to the three DOM targets.
+     * reads the stored user name, then writes to the DOM targets.
      */
     function renderGreeting() {
       const now = new Date();
@@ -122,27 +206,119 @@
 
       // — Greeting message —
       const prefix = getGreetingPrefix(now.getHours());
-      const storedName = StorageService.get('dashboard_user_name');
-      // Append ", [Name]" only when name is a non-empty, non-whitespace-only string
+      const storedName = StorageService.get(STORAGE_KEY);
       const isValidName = typeof storedName === 'string' && storedName.trim().length > 0;
       const greetingStr = isValidName ? prefix + ', ' + storedName.trim() : prefix;
 
       // — Write to DOM —
       const elTime    = document.getElementById('greeting-time');
       const elDate    = document.getElementById('greeting-date');
-      const elMessage = document.getElementById('greeting-message');
+      const elMsgText = document.getElementById('greeting-message-text');
 
       if (elTime)    elTime.textContent    = timeStr;
       if (elDate)    elDate.textContent    = dateStr;
-      if (elMessage) elMessage.textContent = greetingStr;
+      if (elMsgText) elMsgText.textContent = greetingStr;
+    }
+
+    // ── Name editor ──────────────────────────────────────────
+
+    /** Shows the inline name form and pre-fills it with the stored name. */
+    function enterEditMode() {
+      const form   = document.getElementById('greeting-name-form');
+      const input  = document.getElementById('greeting-name-input');
+      const editBtn = document.getElementById('greeting-edit-btn');
+      if (!form || !input) return;
+
+      const stored = StorageService.get(STORAGE_KEY);
+      input.value = (typeof stored === 'string') ? stored : '';
+
+      form.hidden = false;
+      if (editBtn) editBtn.hidden = true;
+      input.focus();
+      input.select();
+    }
+
+    /** Hides the inline name form. */
+    function exitEditMode() {
+      const form    = document.getElementById('greeting-name-form');
+      const editBtn = document.getElementById('greeting-edit-btn');
+      if (form) form.hidden = true;
+      if (editBtn) editBtn.hidden = false;
+
+      // Clear any previous error
+      const errSpan = document.querySelector('.greeting-name-error');
+      if (errSpan) errSpan.remove();
     }
 
     /**
-     * Initialises the widget: renders immediately, then refreshes every 60 s.
+     * Validates, saves, and closes the name editor.
+     * Accepts empty input (clears the name).
+     */
+    function saveName() {
+      const input = document.getElementById('greeting-name-input');
+      if (!input) return;
+
+      const trimmed = input.value.trim();
+
+      // Optional: max 50 chars (enforced by maxlength on the input too)
+      if (trimmed.length > 50) {
+        showNameError('Name must be 50 characters or fewer.');
+        return;
+      }
+
+      if (trimmed.length === 0) {
+        // Empty → remove the stored name so greeting shows without a suffix
+        StorageService.remove(STORAGE_KEY);
+      } else {
+        StorageService.set(STORAGE_KEY, trimmed);
+      }
+
+      exitEditMode();
+      renderGreeting();
+    }
+
+    /** Shows an inline error below the name input. */
+    function showNameError(message) {
+      const controls = document.querySelector('.greeting-name-controls');
+      if (!controls) return;
+      let errSpan = document.querySelector('.greeting-name-error');
+      if (!errSpan) {
+        errSpan = document.createElement('span');
+        errSpan.className = 'greeting-name-error';
+        errSpan.setAttribute('role', 'alert');
+        controls.parentNode.appendChild(errSpan);
+      }
+      errSpan.textContent = message;
+    }
+
+    /**
+     * Initialises the widget: renders immediately, starts the 60 s
+     * interval, and wires up the name-editor interactions.
      */
     function init() {
       renderGreeting();
       setInterval(renderGreeting, 60000);
+
+      // Pencil button → open editor
+      const editBtn = document.getElementById('greeting-edit-btn');
+      if (editBtn) editBtn.addEventListener('click', enterEditMode);
+
+      // Save button
+      const saveBtn = document.getElementById('greeting-name-save');
+      if (saveBtn) saveBtn.addEventListener('click', saveName);
+
+      // Cancel button
+      const cancelBtn = document.getElementById('greeting-name-cancel');
+      if (cancelBtn) cancelBtn.addEventListener('click', exitEditMode);
+
+      // Enter key in the input → save; Escape → cancel
+      const nameInput = document.getElementById('greeting-name-input');
+      if (nameInput) {
+        nameInput.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter')  saveName();
+          if (e.key === 'Escape') exitEditMode();
+        });
+      }
     }
 
     // Expose only what other modules need
@@ -151,34 +327,92 @@
 
   /* =========================================================
      SECTION 3: FocusTimer
-     25-minute Pomodoro countdown with start, stop, and reset
-     controls. Manages its own state machine internally.
-     Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9
+     Pomodoro-style countdown with Focus, Short Break, and Long
+     Break modes. Tracks completed focus sessions and auto-advances
+     to the appropriate break (short after sessions 1–3, long after
+     session 4 in a set of 4). After a break finishes, auto-queues
+     the next focus session.
+     Requirements: 2.1–2.9
      ========================================================= */
 
   const FocusTimer = (function () {
 
-    // Internal state object — single source of truth for the timer
-    const timerState = {
-      remainingSeconds: 1500,           // 25 * 60
-      state: 'idle',                    // 'idle' | 'running' | 'paused' | 'finished'
-      intervalId: null
+    // Durations in seconds
+    const DURATIONS = {
+      focus:  25 * 60,  // 1500 s
+      short:   5 * 60,  //  300 s
+      long:   15 * 60   //  900 s
     };
 
+    const SESSIONS_PER_SET = 4;  // long break after every 4th focus session
+
+    // Internal state — single source of truth
+    const timerState = {
+      mode:             'focus',    // 'focus' | 'short' | 'long'
+      remainingSeconds: DURATIONS.focus,
+      state:            'idle',     // 'idle' | 'running' | 'paused' | 'finished'
+      intervalId:       null,
+      completedFocusSessions: 0    // counts finished focus sessions in the current set
+    };
+
+    // ── Helpers ──────────────────────────────────────────────
+
+    /** Zero-pads a number to at least 2 digits. */
+    function pad(n) { return String(n).padStart(2, '0'); }
+
     /**
-     * Formats timerState.remainingSeconds as MM:SS (zero-padded)
-     * and writes the result to #timer-display.
+     * Writes the current remainingSeconds as MM:SS to #timer-display.
      */
     function updateDisplay() {
-      const mins = String(Math.floor(timerState.remainingSeconds / 60)).padStart(2, '0');
-      const secs = String(timerState.remainingSeconds % 60).padStart(2, '0');
       const el = document.getElementById('timer-display');
-      if (el) el.textContent = mins + ':' + secs;
+      if (el) {
+        el.textContent = pad(Math.floor(timerState.remainingSeconds / 60)) +
+                         ':' +
+                         pad(timerState.remainingSeconds % 60);
+      }
     }
 
     /**
-     * Applies enable/disable rules to the three timer buttons
-     * based on the supplied state string.
+     * Updates the session counter label (#timer-session-count).
+     * Only meaningful in focus mode; hidden text in break modes.
+     */
+    function updateSessionLabel() {
+      const el = document.getElementById('timer-session-count');
+      if (!el) return;
+      if (timerState.mode === 'focus') {
+        const current = (timerState.completedFocusSessions % SESSIONS_PER_SET) + 1;
+        el.textContent = 'Session ' + current + ' / ' + SESSIONS_PER_SET;
+      } else if (timerState.mode === 'short') {
+        el.textContent = 'Short Break';
+      } else {
+        el.textContent = 'Long Break';
+      }
+    }
+
+    /**
+     * Applies/removes visual state classes on the widget container.
+     * .timer--finished → amber  (session/break ended, waiting for user)
+     * .timer--break    → green  (break is running)
+     */
+    function updateContainerClasses() {
+      const container = document.getElementById('focus-timer');
+      if (!container) return;
+
+      // Remove all state classes first
+      container.classList.remove('timer--finished', 'timer--break');
+
+      const isBreak = timerState.mode === 'short' || timerState.mode === 'long';
+
+      if (timerState.state === 'finished') {
+        container.classList.add('timer--finished');
+      } else if (isBreak && (timerState.state === 'running' || timerState.state === 'paused')) {
+        container.classList.add('timer--break');
+      }
+    }
+
+    /**
+     * Enable/disable the three control buttons and update the mode tab
+     * aria-pressed attributes.
      *
      * | State    | Start | Stop | Reset |
      * |----------|-------|------|-------|
@@ -186,103 +420,163 @@
      * | running  |  ❌   |  ✅  |  ✅   |
      * | paused   |  ✅   |  ❌  |  ✅   |
      * | finished |  ✅   |  ❌  |  ✅   |
-     *
-     * @param {'idle'|'running'|'paused'|'finished'} state
      */
     function setButtonStates(state) {
       const btnStart = document.getElementById('timer-start');
       const btnStop  = document.getElementById('timer-stop');
       const btnReset = document.getElementById('timer-reset');
-
       if (!btnStart || !btnStop || !btnReset) return;
 
       const isRunning = state === 'running';
       btnStart.disabled = isRunning;
       btnStop.disabled  = !isRunning;
-      btnReset.disabled = false;  // always enabled
+      btnReset.disabled = false;
     }
 
     /**
-     * Starts the countdown.
-     * Valid from: 'idle' or 'paused' states.
-     * Sets up a 1-second interval that decrements remainingSeconds,
-     * updates the display, and handles the finished condition.
+     * Marks the active mode tab button with the --active modifier and
+     * syncs aria-pressed on all three mode buttons.
+     * @param {'focus'|'short'|'long'} mode
      */
+    function updateModeTabs(mode) {
+      const tabs = {
+        focus: document.getElementById('timer-mode-focus'),
+        short: document.getElementById('timer-mode-short'),
+        long:  document.getElementById('timer-mode-long')
+      };
+      Object.keys(tabs).forEach(function (key) {
+        if (!tabs[key]) return;
+        const isActive = key === mode;
+        tabs[key].classList.toggle('timer-mode-btn--active', isActive);
+        tabs[key].setAttribute('aria-pressed', isActive ? 'true' : 'false');
+      });
+    }
+
+    // ── Mode switching ────────────────────────────────────────
+
+    /**
+     * Switches to the given mode, resets the countdown to that mode's
+     * duration, and returns to idle. Does nothing if already running in
+     * the same mode (protects against accidental tab mis-clicks).
+     * @param {'focus'|'short'|'long'} mode
+     */
+    function switchMode(mode) {
+      // If already idle/paused in this mode, no-op
+      if (timerState.mode === mode && timerState.state !== 'finished') return;
+
+      // Clear any active interval
+      clearInterval(timerState.intervalId);
+      timerState.intervalId = null;
+
+      timerState.mode             = mode;
+      timerState.remainingSeconds = DURATIONS[mode];
+      timerState.state            = 'idle';
+
+      updateModeTabs(mode);
+      updateDisplay();
+      updateSessionLabel();
+      updateContainerClasses();
+      setButtonStates('idle');
+    }
+
+    // ── Core controls ─────────────────────────────────────────
+
+    /** Starts (or resumes) the countdown. */
     function start() {
       if (timerState.state !== 'idle' && timerState.state !== 'paused') return;
 
       timerState.state = 'running';
       setButtonStates('running');
+      updateContainerClasses();
 
       timerState.intervalId = setInterval(function () {
         timerState.remainingSeconds -= 1;
         updateDisplay();
 
         if (timerState.remainingSeconds <= 0) {
-          // Countdown complete
           clearInterval(timerState.intervalId);
-          timerState.intervalId = null;
+          timerState.intervalId       = null;
           timerState.remainingSeconds = 0;
-          timerState.state = 'finished';
+          timerState.state            = 'finished';
 
-          const container = document.getElementById('focus-timer');
-          if (container) container.classList.add('timer--finished');
+          // Track completed focus sessions
+          if (timerState.mode === 'focus') {
+            timerState.completedFocusSessions += 1;
+          }
 
+          updateContainerClasses();
           setButtonStates('finished');
+          updateSessionLabel();
+
+          // Auto-advance: queue the next mode after a short delay so
+          // the user sees the finished state before it changes.
+          setTimeout(function () {
+            if (timerState.state !== 'finished') return; // user already reset
+
+            if (timerState.mode === 'focus') {
+              // After every SESSIONS_PER_SET focus sessions → long break,
+              // otherwise → short break
+              const nextBreak = (timerState.completedFocusSessions % SESSIONS_PER_SET === 0)
+                ? 'long'
+                : 'short';
+              switchMode(nextBreak);
+            } else {
+              // After any break → back to focus
+              switchMode('focus');
+            }
+          }, 1500); // 1.5 s pause so the finished state is visible
         }
       }, 1000);
     }
 
-    /**
-     * Pauses the countdown.
-     * Valid from: 'running' state only.
-     * Clears the interval and retains the current remaining time.
-     */
+    /** Pauses a running countdown. */
     function stop() {
       if (timerState.state !== 'running') return;
-
       clearInterval(timerState.intervalId);
       timerState.intervalId = null;
-      timerState.state = 'paused';
-
+      timerState.state      = 'paused';
       updateDisplay();
       setButtonStates('paused');
+      updateContainerClasses();
     }
 
     /**
-     * Resets the timer back to 25:00 regardless of current state.
-     * Clears any active interval and removes the finished visual indicator.
+     * Resets the current mode's countdown to its full duration and
+     * returns to idle. Does not change the mode or the session count.
      */
     function reset() {
       clearInterval(timerState.intervalId);
-      timerState.intervalId = null;
-
-      const container = document.getElementById('focus-timer');
-      if (container) container.classList.remove('timer--finished');
-
-      timerState.remainingSeconds = 1500;
-      timerState.state = 'idle';
+      timerState.intervalId       = null;
+      timerState.remainingSeconds = DURATIONS[timerState.mode];
+      timerState.state            = 'idle';
 
       updateDisplay();
+      updateContainerClasses();
       setButtonStates('idle');
     }
 
-    /**
-     * Initialises the FocusTimer: sets the initial display to 25:00,
-     * sets the correct button states for 'idle', and wires up the
-     * three control buttons.
-     * Called by App.init() on DOMContentLoaded.
-     */
+    // ── Initialisation ────────────────────────────────────────
+
     function init() {
       updateDisplay();
+      updateSessionLabel();
+      updateModeTabs('focus');
       setButtonStates('idle');
 
+      // Control buttons
       document.getElementById('timer-start').addEventListener('click', start);
       document.getElementById('timer-stop').addEventListener('click', stop);
       document.getElementById('timer-reset').addEventListener('click', reset);
+
+      // Mode tab buttons
+      const focusBtn = document.getElementById('timer-mode-focus');
+      const shortBtn = document.getElementById('timer-mode-short');
+      const longBtn  = document.getElementById('timer-mode-long');
+      if (focusBtn) focusBtn.addEventListener('click', function () { switchMode('focus'); });
+      if (shortBtn) shortBtn.addEventListener('click', function () { switchMode('short'); });
+      if (longBtn)  longBtn.addEventListener('click',  function () { switchMode('long');  });
     }
 
-    // Expose only the public interface
     return { init };
 
   }());
@@ -299,6 +593,12 @@
 
     // In-memory task array — single source of truth for the session
     let tasks = [];
+
+    // Sort state: 'none' | 'asc' | 'desc'
+    // 'none'  → original insertion order
+    // 'asc'   → A → Z
+    // 'desc'  → Z → A
+    let sortOrder = 'none';
 
     /**
      * Loads tasks from localStorage via StorageService.
@@ -367,7 +667,19 @@
 
       taskList.innerHTML = '';
 
-      tasks.forEach(function (task) {
+      // Build a sorted view — never mutate the canonical `tasks` array
+      let displayTasks = tasks.slice();
+      if (sortOrder === 'asc') {
+        displayTasks.sort(function (a, b) {
+          return a.description.toLowerCase().localeCompare(b.description.toLowerCase());
+        });
+      } else if (sortOrder === 'desc') {
+        displayTasks.sort(function (a, b) {
+          return b.description.toLowerCase().localeCompare(a.description.toLowerCase());
+        });
+      }
+
+      displayTasks.forEach(function (task) {
         const li = document.createElement('li');
         li.dataset.taskId = task.id;
 
@@ -539,6 +851,7 @@
      * Validates and adds a new task from the given description string.
      * - Trims whitespace; rejects empty/whitespace-only (Requirement 3.3)
      * - Rejects descriptions > 200 characters (Requirement 3.6)
+     * - Rejects descriptions that duplicate an existing task (case-insensitive)
      * - Creates a Task object with a UUID (or Date.now fallback)
      * - Appends to in-memory array, persists, re-renders, clears input
      * Requirements: 3.1, 3.2, 3.3, 3.6, 6.1
@@ -550,6 +863,7 @@
       // Clear any previous validation error
       clearAddError();
 
+      // .trim() removes leading/trailing whitespace before any validation
       const trimmed = (typeof description === 'string') ? description.trim() : '';
 
       // Reject empty / whitespace-only
@@ -561,6 +875,16 @@
       // Reject over-length descriptions
       if (trimmed.length > 200) {
         showAddError('Task description must be 200 characters or fewer.');
+        return;
+      }
+
+      // Reject duplicates — case-insensitive match against all existing tasks
+      const trimmedLower = trimmed.toLowerCase();
+      const isDuplicate = tasks.some(function (t) {
+        return t.description.toLowerCase() === trimmedLower;
+      });
+      if (isDuplicate) {
+        showAddError('A task with this name already exists. Please use a different description.');
         return;
       }
 
@@ -617,6 +941,33 @@
     }
 
     /**
+     * Cycles sortOrder through none → asc → desc → none and updates
+     * the sort button label to reflect the current state.
+     */
+    function toggleSort() {
+      const btn = document.getElementById('task-sort');
+
+      if (sortOrder === 'none' || sortOrder === 'desc') {
+        sortOrder = 'asc';
+        if (btn) {
+          btn.textContent = 'A–Z ↑';
+          btn.setAttribute('aria-label', 'Sort tasks A → Z (active). Click to sort Z → A');
+          btn.classList.add('task-sort--active');
+        }
+      } else {
+        // sortOrder === 'asc'
+        sortOrder = 'desc';
+        if (btn) {
+          btn.textContent = 'A–Z ↓';
+          btn.setAttribute('aria-label', 'Sort tasks Z → A (active). Click to clear sort');
+          btn.classList.add('task-sort--active');
+        }
+      }
+
+      renderTaskList();
+    }
+
+    /**
      * Attaches submit event listeners:
      * - click on #task-submit
      * - keydown Enter on #task-input
@@ -641,6 +992,12 @@
 
         // Clear validation error as soon as the user modifies the field
         taskInput.addEventListener('input', clearAddError);
+      }
+
+      // Sort button
+      const sortBtn = document.getElementById('task-sort');
+      if (sortBtn) {
+        sortBtn.addEventListener('click', toggleSort);
       }
     }
 
@@ -1034,6 +1391,7 @@
   const App = {
     init() {
       checkStorageAvailability();
+      ThemeToggle.init();
       GreetingWidget.init();
       FocusTimer.init();
       TaskManager.init();
