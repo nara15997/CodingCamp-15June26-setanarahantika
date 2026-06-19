@@ -1,0 +1,434 @@
+/* To-Do Life Dashboard — css/style.css */
+/* Requirements: 10.1, 10.2, 10.4, 10.5 */
+/* Task 12.1: Responsive CSS finalisation — Requirements 10.1, 10.4, 10.5 */
+
+/* ==========================================================
+   1. CSS Reset & Box-Sizing
+   ========================================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ==========================================================
+   2. Base / Body
+   ========================================================== */
+
+:root {
+  --color-bg:          #f0f2f5;
+  --color-surface:     #ffffff;
+  --color-border:      #d1d5db;
+  --color-text:        #1f2937;
+  --color-text-muted:  #6b7280;
+  --color-accent:      #3b82f6;
+  --color-accent-dark: #1d4ed8;
+  --color-finished:    #fef08a;  /* timer--finished highlight */
+  --radius:            8px;
+  --gap:               16px;
+  --shadow:            0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+html {
+  font-size: 16px; /* ≥ 14 px — base for rem units */
+}
+
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+               Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  font-size: 1rem;       /* 16px — satisfies ≥14 px requirement */
+  line-height: 1.5;
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  min-height: 100vh;
+  padding: var(--gap);
+}
+
+/* ==========================================================
+   3. Dashboard Grid Layout
+   Arranges the four widgets in a 2-column grid on wide screens
+   and collapses to a single column on narrow viewports.
+   ========================================================== */
+
+body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto;
+  grid-template-areas:
+    "greeting  timer"
+    "tasks     links";
+  gap: var(--gap);
+  align-items: start;
+}
+
+/* Widget base card style — provides the visible distinct region
+   required by Requirement 10.1 */
+#greeting-widget,
+#focus-timer,
+#task-manager,
+#quick-links-panel {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 20px 24px;
+  min-width: 0; /* prevents grid blowout */
+}
+
+#greeting-widget    { grid-area: greeting; }
+#focus-timer        { grid-area: timer; }
+#task-manager       { grid-area: tasks; }
+#quick-links-panel  { grid-area: links; }
+
+/* ==========================================================
+   4. Widget Typography & Spacing
+   ========================================================== */
+
+#greeting-widget #greeting-time {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+#greeting-widget #greeting-date {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+#greeting-widget #greeting-message {
+  font-size: 1.1rem;
+  margin-top: 8px;
+}
+
+/* ---- Focus Timer ---- */
+
+#focus-timer #timer-display {
+  font-size: 3rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-align: center;
+  margin-bottom: 12px;
+  line-height: 1.1;
+}
+
+.timer-controls {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Active (pressed) state for timer buttons */
+.timer-controls button:active:not(:disabled) {
+  background-color: var(--color-accent-dark);
+  border-color: var(--color-accent-dark);
+  transform: translateY(1px);
+}
+
+/* ---- Task Manager ---- */
+
+.task-add-form {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.task-add-form input {
+  flex: 1 1 160px;
+  min-width: 0;
+}
+
+#task-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Each task row: checkbox + description + action buttons in one line */
+#task-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+  min-width: 0;
+  padding: 4px 0;
+}
+
+#task-list li input[type="checkbox"] {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--color-accent);
+}
+
+#task-list li .task-description {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.9375rem; /* 15px — ≥14px */
+}
+
+/* Edit-mode input inside a task row */
+#task-list li input[type="text"] {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* Task action buttons (Edit / Delete / Save / Cancel) — compact sizing */
+#task-list li button {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  font-size: 0.875rem; /* 14px — meets ≥14px minimum */
+}
+
+/* ---- Quick Links ---- */
+
+.quick-links-add-form {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.quick-links-add-form input {
+  flex: 1 1 120px;
+  min-width: 0;
+}
+
+/* Links list: flex-wrap so buttons never overflow their container */
+#quick-links-list {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Each quick-link row: anchor link + delete button side by side */
+.quick-link-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+
+.quick-link-item a {
+  display: inline-block;
+  padding: 6px 12px;
+  background-color: var(--color-accent);
+  color: #fff;
+  border: 1px solid var(--color-accent);
+  border-radius: 4px;
+  font-size: 0.9375rem; /* 15px — ≥14px */
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.quick-link-item a:hover {
+  background-color: var(--color-accent-dark);
+  border-color: var(--color-accent-dark);
+}
+
+/* Capacity message — styled as a CSS class (JS also sets inline styles as fallback) */
+.links-capacity-message {
+  display: block;
+  font-size: 0.875rem; /* 14px */
+  color: #b45309;
+  margin-top: 4px;
+  width: 100%;
+}
+
+/* Storage / validation error messages */
+.task-storage-error,
+.task-add-error,
+.links-storage-error {
+  display: block;
+  font-size: 0.875rem; /* 14px */
+  color: #dc2626;
+  margin-top: 4px;
+  width: 100%;
+}
+
+/* ==========================================================
+   5. Form Controls (inputs & buttons)
+   ========================================================== */
+
+input[type="text"],
+input[type="url"] {
+  font-size: 0.9375rem; /* 15px — ≥14 px */
+  padding: 6px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  outline: none;
+  width: 100%;
+  transition: border-color 0.15s;
+}
+
+input[type="text"]:focus,
+input[type="url"]:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+}
+
+button {
+  font-size: 0.9375rem; /* 15px — ≥14 px */
+  padding: 6px 14px;
+  border: 1px solid var(--color-accent);
+  border-radius: 4px;
+  background-color: var(--color-accent);
+  color: #fff;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+button:hover:not(:disabled) {
+  background-color: var(--color-accent-dark);
+  border-color: var(--color-accent-dark);
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Screen-reader only utility (used on <label> elements in HTML) */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ==========================================================
+   6. State Stub Classes
+   ========================================================== */
+
+/* Task completed visual — Requirements 3.5, 10.1 */
+.task--completed {
+  text-decoration: line-through;
+  opacity: 0.5;
+}
+
+/* Timer session-end visual indicator — Requirement 2.6 */
+.timer--finished {
+  border-color: #f59e0b;
+  background-color: var(--color-finished);
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.35);
+}
+
+/* ==========================================================
+   7. Responsive Rules
+   Requirements: 10.4 — 320px to 2560px, no horizontal scroll,
+                         no overlap between widget content areas
+   Explicit breakpoints: 320px, 768px, 1280px, 2560px
+   ========================================================== */
+
+/* ── 320px: minimum supported width ──────────────────────── */
+/* The base grid already uses 1fr 1fr; at 320px that is too
+   narrow for two columns, so we switch to single-column here.
+   This block is the catch-all for all phones. */
+@media (max-width: 599px) {
+  body {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "greeting"
+      "timer"
+      "tasks"
+      "links";
+    padding: 12px;
+    gap: 12px;
+  }
+
+  /* Scale down the large timer digit so it fits at 320px */
+  #focus-timer #timer-display {
+    font-size: 2.25rem;
+  }
+
+  /* Allow task description to wrap at narrow width */
+  #task-list li {
+    flex-wrap: wrap;
+  }
+
+  #task-list li .task-description {
+    white-space: normal;
+    word-break: break-word;
+  }
+
+  /* Stack quick-link items vertically on very narrow screens */
+  #quick-links-list {
+    flex-direction: column;
+  }
+
+  .quick-link-item a {
+    max-width: 100%;
+  }
+}
+
+/* ── 768px: tablets / large phones (landscape) ────────────── */
+@media (min-width: 600px) and (max-width: 899px) {
+  body {
+    grid-template-columns: 1fr 1fr;
+    padding: 14px;
+    gap: 14px;
+  }
+
+  #focus-timer #timer-display {
+    font-size: 2.75rem;
+  }
+}
+
+/* ── 1280px: small desktops / large tablets ───────────────── */
+@media (min-width: 900px) and (max-width: 1439px) {
+  body {
+    grid-template-columns: 1fr 1fr;
+    padding: 20px;
+    gap: 20px;
+  }
+}
+
+/* ── 1440px+: large desktops — add breathing room ─────────── */
+@media (min-width: 1440px) {
+  body {
+    max-width: 1400px;
+    margin-inline: auto;
+    padding: 24px;
+    gap: 24px;
+  }
+
+  #focus-timer #timer-display {
+    font-size: 3.5rem;
+  }
+}
+
+/* ── 2560px: ultra-wide — cap width to avoid over-stretching ─ */
+@media (min-width: 2000px) {
+  body {
+    max-width: 1600px;
+  }
+}
+
+/* Prevent horizontal overflow globally — must be last */
+html,
+body {
+  overflow-x: hidden;
+  max-width: 100%;
+}

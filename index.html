@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>To-Do Life Dashboard</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <script src="js/app.js" defer></script>
+  </head>
+  <body>
+    <!-- Greeting Widget -->
+    <section id="greeting-widget" aria-label="Greeting">
+      <p id="greeting-time"></p>
+      <p id="greeting-date"></p>
+      <p id="greeting-message"></p>
+    </section>
+
+    <!-- Focus Timer -->
+    <section id="focus-timer" aria-label="Focus Timer">
+      <p id="timer-display">25:00</p>
+      <div class="timer-controls">
+        <button id="timer-start" type="button">Start</button>
+        <button id="timer-stop" type="button">Stop</button>
+        <button id="timer-reset" type="button">Reset</button>
+      </div>
+    </section>
+
+    <!-- Task Manager -->
+    <section id="task-manager" aria-label="Task Manager">
+      <div class="task-add-form">
+        <label for="task-input" class="sr-only">New task description</label>
+        <input
+          id="task-input"
+          type="text"
+          placeholder="Add a new task…"
+          maxlength="200"
+          autocomplete="off"
+        />
+        <button id="task-submit" type="button">Add Task</button>
+      </div>
+      <ul id="task-list" aria-label="Task list"></ul>
+    </section>
+
+    <!-- Quick Links Panel -->
+    <section id="quick-links-panel" aria-label="Quick Links">
+      <div class="quick-links-add-form">
+        <label for="link-label-input" class="sr-only">Link label</label>
+        <input
+          id="link-label-input"
+          type="text"
+          placeholder="Label"
+          maxlength="50"
+          autocomplete="off"
+        />
+        <label for="link-url-input" class="sr-only">Link URL</label>
+        <input
+          id="link-url-input"
+          type="url"
+          placeholder="https://example.com"
+          maxlength="2048"
+          autocomplete="off"
+        />
+        <button id="link-submit" type="button">Add Link</button>
+      </div>
+      <div id="quick-links-list" aria-label="Quick links list"></div>
+    </section>
+  </body>
+</html>
